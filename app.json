@@ -2,30 +2,34 @@
   "expo": {
     "name": "NexTB",
     "slug": "nextb",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "platforms": [
-      "ios"
+      "ios",
+      "android"
     ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ro.cristoi.nextb",
+      "usesPushNotifications": false,
+      "bundleIdentifier": "com.hackclub.nextb",
+      "icon": "./assets/images/splash-icon.png",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "ro.cristoi.nextb",
+      "package": "com.hackclub.nextb",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
@@ -55,6 +59,9 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "99e59426-334a-42a7-9f39-ab3f07e34735"
       }
     }
   }

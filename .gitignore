@@ -1,1 +1,10 @@
+expo-env.d.ts
+.env
+/node_modules
+/.expo
+/__MACOSX
+/Backend/.expo
+/Backend/node_modules
 /Backend/.env
+/ios
+/scripts

@@ -18,6 +18,12 @@ const readData = () => {
   }
 };
 
+const getVehicleType = (id) => {
+  if(id < 55) return 'Tram';
+  if(id > 60 && id < 100) return 'Trolleybus';
+  if(id >= 100) return 'Bus'
+}
+
 const writeData = (data) => {
   fs.writeFileSync(process.env.NOACPATH, JSON.stringify(data, null, 2), 'utf8');
 };
@@ -339,10 +345,17 @@ app.get('/api', async (req, res) => {
 
     for (let i = 1; i <= orderedIDs.length; i++) {
       try {
-        const typeAndImg = await getTipById(orderedIDs[i - 1].id);
-        orderedIDs[i - 1].ac = hasAC(orderedIDs[i - 1].id, typeAndImg[0]);
-        orderedIDs[i - 1].type = typeAndImg[0];
-        orderedIDs[i - 1].image = typeAndImg[1];
+        if(orderedIDs[i - 1].id == 0 || orderedIDs[i - 1].id == null) {
+          orderedIDs[i - 1].ac = false;
+          orderedIDs[i - 1].type = getVehicleType(parseInt(line.name));
+          orderedIDs[i - 1].image ='https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/unknown.png';
+        } else {
+          const typeAndImg = await getTipById(orderedIDs[i - 1].id);
+          orderedIDs[i - 1].ac = hasAC(orderedIDs[i - 1].id, typeAndImg[0]);
+          orderedIDs[i - 1].type = typeAndImg[0];
+          orderedIDs[i - 1].image = typeAndImg[1];
+        }
+        
       } catch (err) {
         console.error(err.message);
         orderedIDs[i - 1].type = "Unknown";

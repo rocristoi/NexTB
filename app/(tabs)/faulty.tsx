@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-const API_LINK = 'http://x.x.x.x:3000/'
+const API_LINK = process.env.EXPO_PUBLIC_API_URL;
 
 
 export default function TabTwoScreen() {
@@ -19,12 +19,15 @@ export default function TabTwoScreen() {
     try {
       const response = await fetch(`${API_LINK}api/vehicle/${action}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.EXPO_PUBLIC_API_KEY as string,
+         },
         body: JSON.stringify({ vehicleNumber }),
       });
       const data = await response.json(); 
       if (response.ok) {
-        Alert.alert('Success', `Vehicle ${vehicleNumber} ${action}ed successfully!`);
+        Alert.alert('Success', `Vehicle ${vehicleNumber} ${action}${action == 'add' ? 'ed' : 'd'} successfully!`);
         setVehicleNumber(''); 
       } else {
         Alert.alert('Error', `Failed to ${action} vehicle. ${data.error}`);
@@ -46,13 +49,14 @@ export default function TabTwoScreen() {
 
       <ThemedText style={{ textAlign: 'left', fontSize: 16, fontWeight: '500' }}>
       Add vehicles with faulty AC units by entering their ID.  
-      If the AC is working but the status seems incorrect, you can remove the vehicle from the faulty AC list.
+      If you can feel the AC is working but the status in the app shows the opposite, you can remove the vehicle from the faulty AC list.
     </ThemedText>
 
       <TextInput
         style={styles.input}
         placeholder="Enter a vehicle ID"
         keyboardType="numeric"
+        placeholderTextColor='white'
         value={vehicleNumber}
         onChangeText={setVehicleNumber}
       />

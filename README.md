@@ -1,17 +1,39 @@
 # ![ICON](https://i.imgur.com/incWzcm.png)
 
-NexTB is an IOS-oriented React Native application designed to provide real-time updates on arrival times of trams, buses and trolleybuses in Bucharest. It is not just a tracking app, it provides comprehensive information including Vehicle ID, License Plate, Passenger Count , AC functionality status & an icon of the vehicle (based on vehicle type). This App aims to help residents catch their rides in comfort without suffering from poor air conditioning or overcrowded vehicles.
+NexTB is an IOS and Android compatible React Native application designed to provide real-time updates on arrival times of trams, buses and trolleybuses in Bucharest. It is not just a tracking app, it provides comprehensive information including Vehicle ID, License Plate, Passenger Count, AC functionality status & an icon of the vehicle (based on vehicle type). This App aims to help residents catch their rides in comfort without suffering from poor air conditioning or overcrowded vehicles.
+
+## <img src="https://i.imgur.com/LSCZp4e.png" width="300"/>
+
+This update brings a better-looking and more functional version of NexTB, with official support for Android devices. The focus is on enhanced UX and UI, alongside performance improvements.
+
+### New Features & Improvements
+- **Added `Alerts` tab** – View alerts directly in the app, similar to InfoTB.
+- **Revamped Bottom Sheet**:
+    - Switched to a bottom sheet library for smoother interactions (no more custom gestures).
+    - Now displays collapsible cards for each transit line instead of listing all at once. Tap a card for details like vehicle images, license plates, etc.
+    - Opens instantly with a loading screen instead of waiting for backend data to load.
+- **Performance Boost** – Faster loading times with clustering now implemented on iOS (also supported on Android).
+- **New Settings Tab** – Customize your experience by choosing what information to display, including passenger count, AC status, vehicle plate, and ID.
+
+### 🛑 Known Issues
+- **Missing Vehicle IDs/Images** – Caused by TPBI sometimes returning a 0 as the vehicle ID. This results in placeholder images with no fix unless TPBI updates their API. (not likely)
+- **Incorrect or Missing Map Markers** – Some markers represent escalators, elevators, stairs etc... instead of stations due to GTFS dataset errors. Fixing this manually for hundreds of stations is impractical, but contributions are welcome!
+- **Vehicles Not Showing at Route Start/End** – This occurs when a station is configured to track only one direction. Displaying vehicles depends on how the station's configuration handles directions.
+
+### Want to use the app on your IOS device?
+Then I'll add you to the testing team and you'll become an official NexTB tester! Please reach out to me via the contact form on [my website](https://cristoi.ro#contact).
+
 
 ## How it Works
 
 ### The app
 
-The React Native (RN) application fetches the list of markers from the GTFS data from TPBI's website and displays them on a map. Users can select any point on the map and the app fetches the arrival information of the vehicles passing through that station from the backend. There's also a feature to report malfunctioning AC systems in any vehicle.
+The React Native application fetches the list of markers from the GTFS data from TPBI's (Transport Public București-Ilfov) new API (mo-bi.ro) and displays them on a map. Users can select any point on the map and the app fetches the arrival information of the vehicles passing through that station from the backend. There's also a feature to report malfunctioning AC systems in any vehicle.
 
-<img src="https://i.imgur.com/T9vNyqh.png" width="800"/>
+<img src="https://i.imgur.com/IadNSuW.png" width="800"/>
 
 
-**NOTE:** This app uses an unofficial STB API to determine arrival times. This API isn't shared publicly due to legal concerns. For learning more about this API, please get in touch with me via the contact form on my website, https://cristoi.ro or via email at cristi@cristoi.ro.
+**NOTE:** This app uses an unofficial STB API to determine arrival times & notifications. This API isn't shared publicly due to legal concerns. For learning more about this API, please get in touch with me via the contact form on my website, [cristoi.ro](https://cristoi.ro) or via email at cristi@cristoi.ro.
 
 
 
@@ -73,6 +95,7 @@ The backend is situated in the /Backend folder.
     LINE_CHECK_COOLDOWN=120000
     MORE_THAN_SVTN_MINUTES_TEXT='m'
     NOACPATH='./noAC.json'
+    API_KEY=''
     ```
 
     ### Configuration Options
@@ -98,6 +121,9 @@ The backend is situated in the /Backend folder.
     #### `NOACPATH='./noAC.json'`
     This is the path to the JSON file which stores the IDs of buses and trams that don't have functioning AC units.
 
+    #### `API_KEY=''`
+    This is your secret key used to communicate between the Backend and Frontend (the app). This is verified everytime a request is made, so make sure it's the same in the app, too!
+
 
 
 2. Install all the dependencies by running `npm i`
@@ -112,19 +138,29 @@ The backend is situated in the /Backend folder.
 
 1. Install the required dependecies by running `npm i`
 
-2. Modify the `API_LINK` (found in `/app/(tabs)/expore.tsx` and `/app/(tabs)/index.tsx`) to your backend server's IP and port. 
+2. Create an .env file in the root directory of the project. Include these:
+    ```env
+    EXPO_PUBLIC_API_URL= # Your Backend API URL.
+    EXPO_PUBLIC_ALERTS_API_URL= # Your Alerts API URL.
+    EXPO_PUBLIC_MAPBOX_TOKEN= # Mapbox Token ( only needed for running this app on Android devices).
+    EXPO_PUBLIC_API_KEY= # This Should Match the backend key.
+    ```
     ⚠️ Note: You can use http links, but I would recommend using HTTPS for secure connections. 
 
 3. Run the app using expo:
     ``` bash
-    npx expo run:ios
+    npx expo run:<platform>
+    ```
+    or, if you don't want to build the app,
+    ``` bash
+    npx expo start
     ```
 
 ## Contributions
 
 - If you can provide images (illustrations) for Irisbus Citelis, V3A-2S-93, and the basic white V3A-93, [let's talk!](https://cristoi.ro/#contact)
 - Help needed to add vehicle types for STCM, STV, and other agencies that operate near Bucharest under TPBI. Currently, only STB is added.
-- Also looking to add functionalities to the IOS React Native app like:
+- Also looking to add functionalities like:
     - **Lines Tab** – A real-time vehicle tracking feature, similar to the Radcom App (InfoTB, CTbus, TUSM, OTL Oradea, etc.).
     - **Improved Faulty AC Reporting** – A smarter voting-based system for adding/removing vehicles from the faulty AC list. If fewer than five users report an issue, the AC status will be marked as "May Not Work."
     - **Vehicle Details Page** – A dedicated section for each vehicle displaying key details such as mileage, VIN, real photos, and user-submitted comments. (Possible to make right now with info from metrouusor.com)
