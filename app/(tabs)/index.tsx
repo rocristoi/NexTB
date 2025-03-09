@@ -132,6 +132,7 @@ export default function HomeScreen() {
       }
     } else if(selectedPoint !== stationID) {
       setData(null);
+      setActiveCard(null);
       try {
         const r = await axios.get(`${API_LINK}api?stationID=${stationID}`, {
           headers: {
@@ -155,6 +156,7 @@ export default function HomeScreen() {
       setModalVisible(false)
       setSelectedPoint(null);
       setData(null);
+      setActiveCard(null);
     }
   };
 
@@ -229,6 +231,7 @@ export default function HomeScreen() {
                     setModalVisible(false)
                     setSelectedPoint(null);
                     setData(null);
+                    setActiveCard(null);
                   }}
                 >
                   <BottomSheetScrollView style={{backgroundColor: "#121212", marginBottom: 80}}  contentContainerStyle={styles.bottomContainer} >
