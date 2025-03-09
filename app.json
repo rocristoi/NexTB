@@ -60,6 +60,7 @@
       "router": {
         "origin": false
       },
+       "MAPBOX_ACCESS_TOKEN": "your-mapbox-token",
       "eas": {
         "projectId": "99e59426-334a-42a7-9f39-ab3f07e34735"
       }

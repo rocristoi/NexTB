@@ -9,3 +9,4 @@ expo-env.d.ts
 /ios
 /scripts
 /certs
+/android

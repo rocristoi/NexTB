@@ -502,6 +502,7 @@ export default function HomeScreen() {
                     setModalVisible(false)
                     setSelectedPoint(null);
                     setData(null);
+                    setActiveCard(null);
                   }}
                 >
                   <BottomSheetScrollView style={{backgroundColor: "#121212", marginBottom: 80}}  contentContainerStyle={styles.bottomContainer} >
