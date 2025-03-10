@@ -196,7 +196,7 @@ export default function HomeScreen() {
           }}
       
         >
-          {stops.filter(stop => stop.location_type !== 2).map(stop => (
+          {stops.filter(stop => (stop.location_type == 0 || stop.location_type == 1) && stop.parent_station == "").map(stop => (
             <Marker
               coordinate={{
                 latitude: stop.stop_lat,
@@ -207,6 +207,7 @@ export default function HomeScreen() {
                 setSelectedPoint(Number(stop.stop_id)); 
                 Haptics.selectionAsync();
                 toggleModal(stop.stop_id);
+                console.log('Checking for ' + stop.stop_id)
               }} 
             >
             <Svg width={24} height={24} viewBox="0 0 24 24"> 
@@ -414,7 +415,7 @@ export default function HomeScreen() {
     );
   } else {
     const filteredStops = useMemo(() => 
-      stops.filter(stop => stop.location_type !== 2 && stop.parent_station === ""), 
+      stops.filter(stop => (stop.location_type == 0 || stop.location_type == 1) && stop.parent_station == ""), 
       [stops]
     );
   

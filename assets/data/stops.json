@@ -18722,17 +18722,6 @@
     "level_id": ""
   },
   {
-    "stop_id": 14703,
-    "stop_name": "Gara de Nord 1 (M1)",
-    "stop_desc": "",
-    "stop_lat": 44.44748,
-    "stop_lon": 26.07597,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
-  },
-  {
     "stop_id": "14703R",
     "stop_name": "Gara de Nord 1 (M1)",
     "stop_desc": "",
@@ -24260,17 +24249,6 @@
     "stop_desc": "Parcul Unirii",
     "stop_lat": 44.426006,
     "stop_lon": 26.103346,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15100,
-    "level_id": 1
-  },
-  {
-    "stop_id": 147263,
-    "stop_name": "Lift Piața Unirii 2 (M2) Lift (C) / Elevator Piața Unirii 2 (M2) Lift (C)",
-    "stop_desc": "Parcul Unirii",
-    "stop_lat": 44.428097,
-    "stop_lon": 26.10352,
     "location_type": 2,
     "platform_code": "",
     "parent_station": 15100,
@@ -34441,17 +34419,6 @@
     "level_id": ""
   },
   {
-    "stop_id": 14699,
-    "stop_name": "Piața Iancului",
-    "stop_desc": "",
-    "stop_lat": 44.44093,
-    "stop_lon": 26.13315,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
-  },
-  {
     "stop_id": "14699R",
     "stop_name": "Piața Iancului",
     "stop_desc": "",
@@ -34485,17 +34452,6 @@
     "level_id": 1
   },
   {
-    "stop_id": 14698,
-    "stop_name": "Piața Muncii",
-    "stop_desc": "",
-    "stop_lat": 44.43244,
-    "stop_lon": 26.13843,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
-  },
-  {
     "stop_id": "14698R",
     "stop_name": "Piața Muncii",
     "stop_desc": "",
@@ -34516,17 +34472,6 @@
     "platform_code": 1,
     "parent_station": 14698,
     "level_id": 0
-  },
-  {
-    "stop_id": 14724,
-    "stop_name": "Piața Romană",
-    "stop_desc": "",
-    "stop_lat": 44.44505,
-    "stop_lon": 26.09796,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
   },
   {
     "stop_id": "14724R",
@@ -34551,17 +34496,6 @@
     "level_id": 0
   },
   {
-    "stop_id": 14730,
-    "stop_name": "Piața Sudului",
-    "stop_desc": "",
-    "stop_lat": 44.39281,
-    "stop_lon": 26.12209,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
-  },
-  {
     "stop_id": "14730R",
     "stop_name": "Piața Sudului",
     "stop_desc": "",
@@ -34584,17 +34518,6 @@
     "level_id": 0
   },
   {
-    "stop_id": 15100,
-    "stop_name": "Piața Unirii",
-    "stop_desc": "",
-    "stop_lat": 44.42758,
-    "stop_lon": 26.1026,
-    "location_type": 1,
-    "platform_code": "",
-    "parent_station": "",
-    "level_id": ""
-  },
-  {
     "stop_id": "14710R",
     "stop_name": "Piața Unirii 1 (M1/3)",
     "stop_desc": "",
@@ -34611,28 +34534,6 @@
     "stop_desc": "",
     "stop_lat": 44.42826,
     "stop_lon": 26.10101,
-    "location_type": "",
-    "platform_code": 1,
-    "parent_station": 15100,
-    "level_id": 0
-  },
-  {
-    "stop_id": "14726R",
-    "stop_name": "Piața Unirii 2 (M2)",
-    "stop_desc": "",
-    "stop_lat": 44.42792,
-    "stop_lon": 26.10418,
-    "location_type": "",
-    "platform_code": 2,
-    "parent_station": 15100,
-    "level_id": 0
-  },
-  {
-    "stop_id": "14726T",
-    "stop_name": "Piața Unirii 2 (M2)",
-    "stop_desc": "",
-    "stop_lat": 44.42792,
-    "stop_lon": 26.10418,
     "location_type": "",
     "platform_code": 1,
     "parent_station": 15100,
@@ -34666,28 +34567,6 @@
     "stop_desc": "",
     "stop_lat": 44.45371,
     "stop_lon": 26.08627,
-    "location_type": "",
-    "platform_code": 1,
-    "parent_station": 15099,
-    "level_id": 0
-  },
-  {
-    "stop_id": "14702R",
-    "stop_name": "Piața Victoriei 2 (M2)",
-    "stop_desc": "",
-    "stop_lat": 44.45172,
-    "stop_lon": 26.08729,
-    "location_type": "",
-    "platform_code": 2,
-    "parent_station": 15099,
-    "level_id": 0
-  },
-  {
-    "stop_id": "14702T",
-    "stop_name": "Piața Victoriei 2 (M2)",
-    "stop_desc": "",
-    "stop_lat": 44.45172,
-    "stop_lon": 26.08729,
     "location_type": "",
     "platform_code": 1,
     "parent_station": 15099,
@@ -40997,28 +40876,6 @@
     "level_id": 1
   },
   {
-    "stop_id": 147265,
-    "stop_name": "Scări Piața Unirii 2 (M2) D / Stairs Piața Unirii 2 (M2) D",
-    "stop_desc": "Magazinul Unirea",
-    "stop_lat": 44.427536,
-    "stop_lon": 26.10422,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15100,
-    "level_id": 1
-  },
-  {
-    "stop_id": 147021,
-    "stop_name": "Scări Piața Victoriei 2 (M2) B / Stairs Piața Victoriei 2 (M2) B",
-    "stop_desc": "Bd. Lascăr Catargiu",
-    "stop_lat": 44.45169,
-    "stop_lon": 26.087713,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15099,
-    "level_id": 1
-  },
-  {
     "stop_id": 147201,
     "stop_name": "Scări Pipera A / Stairs Pipera A",
     "stop_desc": "B-dul Dimitrie Pompeiu",
@@ -41173,17 +41030,6 @@
     "level_id": 1
   },
   {
-    "stop_id": 147264,
-    "stop_name": "Scări rulante Piața Unirii 2 (M2) D / Escalators Piața Unirii 2 (M2) D",
-    "stop_desc": "Bd. I.C. Brătianu",
-    "stop_lat": 44.42808,
-    "stop_lon": 26.104166,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15100,
-    "level_id": 1
-  },
-  {
     "stop_id": 147831,
     "stop_name": "Scări rulante și Lift Tudor Arghezi A / Escalators & Elevator Tudor Arghezi A",
     "stop_desc": "Șoseaua Berceni",
@@ -41302,28 +41148,6 @@
     "location_type": 2,
     "platform_code": "",
     "parent_station": 14747,
-    "level_id": 1
-  },
-  {
-    "stop_id": 147261,
-    "stop_name": "Scări și Lift Piața Unirii 2 (M2) C / Stairs & Elevator Piața Unirii 2 (M2) C",
-    "stop_desc": "Splaiul Independenței",
-    "stop_lat": 44.42905,
-    "stop_lon": 26.103218,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15100,
-    "level_id": 1
-  },
-  {
-    "stop_id": 147262,
-    "stop_name": "Scări și Lift Piața Unirii 2 (M2) C / Stairs & Elevator Piața Unirii 2 (M2) C",
-    "stop_desc": "Splaiul Independenței",
-    "stop_lat": 44.429077,
-    "stop_lon": 26.103027,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15100,
     "level_id": 1
   },
   {
@@ -41742,17 +41566,6 @@
     "location_type": 2,
     "platform_code": "",
     "parent_station": 15100,
-    "level_id": 1
-  },
-  {
-    "stop_id": 147022,
-    "stop_name": "Scări și Scări rulante (doar urcare) Piața Victoriei 2 (M2) C / Stairs & Escalators (only going upwards) Piața Victoriei 2 (M2) C",
-    "stop_desc": "Bd. Aviatorilor",
-    "stop_lat": 44.453686,
-    "stop_lon": 26.086262,
-    "location_type": 2,
-    "platform_code": "",
-    "parent_station": 15099,
     "level_id": 1
   },
   {
