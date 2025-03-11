@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Image, View, StatusBar, Text, Platform, Pressable, LayoutAnimation, ActivityIndicator } from 'react-native';
+import { SafeAreaView, StyleSheet, Image, View, StatusBar, Text, Platform, Pressable, LayoutAnimation, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Marker, Region } from 'react-native-maps';
-import { default as ClusteredMapView } from "react-native-map-clustering";
+import MapView  from "react-native-map-clustering";
+interface CustomMapView extends MapView {
+  animateToRegion: (region: any, duration?: number) => void;
+}
 import Svg, { Circle } from 'react-native-svg';
 import * as Location from 'expo-location';
 import axios from 'axios';
@@ -33,16 +36,23 @@ export default function HomeScreen() {
   const snapPoints = useMemo(() => ["20%", "70%"], []);
   const [activeCard, setActiveCard] = useState<string | null>(null);
   const {displayAdditionalInfo, selectedPrimaryDetail} = useStore();
+  const mapRef = useRef<CustomMapView | null>(null);
 
-
-
+  const animateToCenter = () => {
+    let REGION = {
+      latitude: location?.coords.latitude,
+      longitude: location?.coords.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01
+    }
+    mapRef.current?.animateToRegion(REGION, 1000);
+  }
 
   const HandleChangeActiveCard = (id: string) => {
     if(Platform.OS === 'ios') {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); 
     }
     setActiveCard(prev => (prev === id ? null : id)); 
-
   };
 
 
@@ -167,9 +177,10 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
         </View>
-  
-        <ClusteredMapView
+        <View style={{width: "100%", height: "94%"}}>
+        <MapView
           style={styles.map}
+          ref={mapRef}
           mapType="mutedStandard"
           region={region || { latitude: 44.426858, longitude:  26.102377, latitudeDelta: 0.1, longitudeDelta: 0.1 }} 
           showsUserLocation={true}
@@ -207,7 +218,6 @@ export default function HomeScreen() {
                 setSelectedPoint(Number(stop.stop_id)); 
                 Haptics.selectionAsync();
                 toggleModal(stop.stop_id);
-                console.log('Checking for ' + stop.stop_id)
               }} 
             >
             <Svg width={24} height={24} viewBox="0 0 24 24"> 
@@ -216,8 +226,11 @@ export default function HomeScreen() {
             </Svg>
             </Marker>
           ))}
-        </ClusteredMapView>
-
+        </MapView>
+        <TouchableOpacity activeOpacity={0.8} style={styles.centerButton} onPress={animateToCenter}>
+          <Text>📍</Text>
+        </TouchableOpacity>
+        </View>
         { modalVisible && (
                   <BottomSheet
                   ref={sheetRef}
@@ -418,6 +431,15 @@ export default function HomeScreen() {
       stops.filter(stop => (stop.location_type == 0 || stop.location_type == 1) && stop.parent_station == ""), 
       [stops]
     );
+
+    const cameraRef = useRef(null);
+
+    const animateToCenterAndroid = async () => {
+      const userLocation = await Mapbox.locationManager.getLastKnownLocation();
+      if (userLocation) {
+        cameraRef.current?.flyTo([userLocation.coords.longitude, userLocation.coords.latitude], 1000);
+      }
+    } 
   
     const geoJSON = useMemo(() => ({
       type: "FeatureCollection",
@@ -441,23 +463,27 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
       </View>
-  
-      <Mapbox.MapView style={{ flex: 1 }} styleURL={Mapbox.StyleURL.Dark}>
-      <Mapbox.UserLocation />
+      <View style={{width: "100%", height: "94%"}}>
 
+      <Mapbox.MapView style={{ flex: 1 }} styleURL={Mapbox.StyleURL.Dark}>
+        
+              <Mapbox.UserLocation />
+      
       <Mapbox.Camera
         zoomLevel={16}
         centerCoordinate={region ? [region.longitude, region.latitude] : [ 26.102377, 44.426858]}
-      />
+        ref={cameraRef}
+        />
+
 
       <Mapbox.Images
         images={{
           "default-marker": require("@/assets/not-selected.png"),
           "selected-marker": require("@/assets/selected.png"),
           "cluster-marker": require("@/assets/more.png"),
-
+          
         }}
-      />
+        />
 
       <Mapbox.ShapeSource
         id="stopsSource"
@@ -473,7 +499,7 @@ export default function HomeScreen() {
             toggleModal(stopId);
           }
         }}
-      >
+        >
         <Mapbox.SymbolLayer
             id="stopsLayer"
             style={{
@@ -485,9 +511,13 @@ export default function HomeScreen() {
               ],
               iconSize: 0.8,
             }}
-          />
+            />
       </Mapbox.ShapeSource>
     </Mapbox.MapView>
+    <TouchableOpacity activeOpacity={0.8} style={styles.centerButton} onPress={animateToCenterAndroid}>
+          <Text>📍</Text>
+        </TouchableOpacity>
+            </View>
 
       
     { modalVisible && (
@@ -708,17 +738,25 @@ const styles = StyleSheet.create({
   },
   centerButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 10,
     right: 10,
-    backgroundColor: 'black',
+    backgroundColor: '#121212',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+      ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 5, 
+      },
+    }),
   },
+  
   buttonText: {
     color: 'white',
     fontSize: 16,
@@ -775,5 +813,6 @@ const styles = StyleSheet.create({
   clusterText: { color: 'white', fontWeight: 'bold' },
   calloutContainer: { padding: 10 },
   calloutTitle: { fontWeight: 'bold' },
-  bottomContainer: { backgroundColor: "#121212"}
+  bottomContainer: { backgroundColor: "#121212"},
+  
 });
