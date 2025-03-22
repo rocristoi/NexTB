@@ -39,6 +39,13 @@ export default function TabLayout() {
         }}
       />
         <Tabs.Screen
+        name="lines"
+        options={{
+          title: 'Lines',
+          tabBarIcon: ({ color }) => <MaterialIcons name="linear-scale" size={24} color={color} />,
+        }}
+      />
+        <Tabs.Screen
         name="index"
         options={{
           title: 'Map',

@@ -437,7 +437,7 @@ export default function HomeScreen() {
     const animateToCenterAndroid = async () => {
       const userLocation = await Mapbox.locationManager.getLastKnownLocation();
       if (userLocation) {
-        cameraRef.current?.flyTo([userLocation.coords.longitude, userLocation.coords.latitude], 1000);
+        (cameraRef.current as any)?.flyTo([userLocation.coords.longitude, userLocation.coords.latitude], 1000);
       }
     } 
   
