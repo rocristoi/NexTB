@@ -10,6 +10,15 @@ require('dotenv').config();
 const csv = require("csv-parser");
 
 
+async function getShapeById(shapeId) {
+  const shapesData = await loadShapesData();
+  if (!shapesData) return null;
+  const routeShape = shapesData
+  .filter(row => row.shape_id === shapeId)
+  .map(row => [parseFloat(row.shape_pt_lat), parseFloat(row.shape_pt_lon)]);
+  return routeShape;
+}
+
 const readData = () => {
   try {
       return JSON.parse(fs.readFileSync(process.env.NOACPATH, 'utf8'));
@@ -19,16 +28,21 @@ const readData = () => {
 };
 
 const getVehicleType = (id) => {
-  if(id < 55) return 'Tram';
-  if(id > 60 && id < 100) return 'Trolleybus';
-  if(id >= 100) return 'Bus'
-}
+  const numId = parseInt(id); 
+  if (Number.isNaN(numId)) return 'bus'; 
+  if (numId < 55) return 'tram';
+  if (numId > 60 && numId < 100) return 'trolleybus';
+  if (numId >= 100) return 'bus';
+
+  return 'Unknown'; 
+};
 
 const writeData = (data) => {
   fs.writeFileSync(process.env.NOACPATH, JSON.stringify(data, null, 2), 'utf8');
 };
 
 let tramDataCache = null;
+let routesDataCache = null;
 
 const nonACtypes = ['V3A-93', 'V3A-93M', 'V3A-93 PPC', 'V3A-93 CH-PPC', 'V3A-2010-PPC-CA', 'V3A-93M 2000', 'V3A-2S-93', 'Bucur 1 V2A-T', 'Tatra T4R'];
 
@@ -40,6 +54,31 @@ const hasAC = (vehID, type) => {
   } else {
     return true;
   }
+};
+
+const loadRoutesData = async () => {
+  if (routesDataCache) return routesDataCache;
+
+  return new Promise((resolve, reject) => {
+    const results = Object.create(null); 
+
+    fs.createReadStream("routes.txt")
+      .pipe(csv({ separator: "," }))
+      .on("data", (data) => {
+        const key = data.route_short_name; 
+        const value = {
+          id: data.route_id,
+          color: data.route_color,
+          type: getVehicleType(data.route_short_name)
+        }; 
+        results[key] = value;
+      })
+      .on("end", () => {
+        routesDataCache = results;
+        resolve(routesDataCache);
+      })
+      .on("error", (err) => reject(err));
+  });
 };
 
 async function loadTramData() {
@@ -72,17 +111,17 @@ async function getTipById(id) {
   }
 
   const tramTypeMap = {
-    "4100-4599": ["M-Benz Citaro EURO 3", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/4661.png"],
-    "4600-4999": ["M-Benz Citaro EURO 4", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/4661.png"],
-    "6200-6299": ["M-Benz Citaro EURO 4", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/4661.png"],
-    "5301-5400": ["Irisbus Citelis", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Untitled_design-removebg-preview.png"],
-    "5100-5300": ["Ikarus Astra 415T", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Ikarus_415T_STB_V.png"],
-    "5400-5500": ["Solaris Trollino 12M", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Trollino+12.png"],
-    "6300-6350": ["Otokar Kent 10m", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Otokar+C10.png"],
-    "6400-6720": ["Otokar Kent 12m", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Otokar+C12.png"],
-    "6800-6830": ["Otokar Kent 18m", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/Otokar+C18.png"],
-    "7000-7130": ["M-Benz Citaro Hibrid", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/O530-D1-1-STB_V.png"],
-    "7200-7300": ["ZTE Granton 12m", "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/ZTE-12m.png"],
+    "4100-4599": ["M-Benz Citaro EURO 3", "https://cdn.cristoi.ro/4661.png"],
+    "4600-4999": ["M-Benz Citaro EURO 4", "https://cdn.cristoi.ro/4661.png"],
+    "6200-6299": ["M-Benz Citaro EURO 4", "https://cdn.cristoi.ro/4661.png"],
+    "5301-5400": ["Irisbus Citelis", "https://cdn.cristoi.ro/Irisbus.png"],
+    "5100-5300": ["Ikarus Astra 415T", "https://cdn.cristoi.ro/Ikarus_415T_STB_V.png"],
+    "5400-5500": ["Solaris Trollino 12M", "https://cdn.cristoi.ro/Trollino+12.png"],
+    "6300-6350": ["Otokar Kent 10m", "https://cdn.cristoi.ro/Otokar+C10.png"],
+    "6400-6720": ["Otokar Kent 12m", "https://cdn.cristoi.ro/Otokar+C12.png"],
+    "6800-6830": ["Otokar Kent 18m", "https://cdn.cristoi.ro/Otokar+C18.png"],
+    "7000-7130": ["M-Benz Citaro Hibrid", "https://cdn.cristoi.ro/O530-D1-1-STB_V.png"],
+    "7200-7300": ["ZTE Granton 12m", "https://cdn.cristoi.ro/ZTE-12m.png"],
   };
 
   for (const [range, value] of Object.entries(tramTypeMap)) {
@@ -96,20 +135,20 @@ async function getTipById(id) {
 }
 
 function getImageByTip(tip) {
-  const imageMap = {
-    "V3A-93": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/BLF-2-3A6-417_STB_V.png",
-    "V3A-93M": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/BLF-2-3A6-417_STB_V.png",
-    "V3A-93 PPC": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/BLF-2-3A6-417_STB_V.png",
-    "V3A-93 CH-PPC": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/V3A-2006-1_STB_V.png",
-    "V3A-2010-PPC-CA": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/V3A-2006-1_STB_V.png",
-    "V3A-93M 2000": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/V3A-2006-1_STB_V.png",
-    "V3A-2S-93": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/OIP-removebg-preview.png",
-    "Astra Imperio Metropolitan": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/AstraGT8_STB_V.png",
-    "Bucur 1 V2A-T": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/V2AT.png",
-    "Bucur LF": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/BLF-2-3A6-1_g2.png",
-    "Tatra T4R": "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/T4-3_STB_V.png",
-  };
-  return imageMap[tip] || "https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/BLF-2-3A6-1.png";
+    const imageMap = {
+      "V3A-93": "https://cdn.cristoi.ro/BLF-2-3A6-417_STB_V.png",
+      "V3A-93M": "https://cdn.cristoi.ro/BLF-2-3A6-417_STB_V.png",
+      "V3A-93 PPC": "https://cdn.cristoi.ro/BLF-2-3A6-417_STB_V.png",
+      "V3A-93 CH-PPC": "https://cdn.cristoi.ro/V3A-2006-1_STB_V.png",
+      "V3A-2010-PPC-CA": "https://cdn.cristoi.ro/V3A-2006-1_STB_V.png",
+      "V3A-93M 2000": "https://cdn.cristoi.ro/V3A-2006-1_STB_V.png",
+      "V3A-2S-93": "https://cdn.cristoi.ro/V3A-2S-93.png",
+      "Astra Imperio Metropolitan": "https://cdn.cristoi.ro/AstraGT8_STB_V.png",
+      "Bucur 1 V2A-T": "https://cdn.cristoi.ro/V2AT.png",
+      "Bucur LF": "https://cdn.cristoi.ro/BLF-2-3A6-1_g2.png",
+      "Tatra T4R": "https://cdn.cristoi.ro/T4-3_STB_V.png",
+    };
+    return imageMap[tip] || "https://cdn.cristoi.ro/BLFV2.png";
 }
 
 
@@ -271,7 +310,13 @@ const isTimestampRecent = (timestamp) => {
 
 app.use(express.json());
 
-
+app.use((req, res, next) => {
+  const clientKey = req.headers["x-api-key"];
+  if (clientKey !== process.env.API_KEY) {
+      return res.status(403).json({ error: "Unauthorized" });
+  }
+  next();
+});
 
 
 app.get('/api', async (req, res) => {
@@ -348,7 +393,7 @@ app.get('/api', async (req, res) => {
         if(orderedIDs[i - 1].id == 0 || orderedIDs[i - 1].id == null) {
           orderedIDs[i - 1].ac = false;
           orderedIDs[i - 1].type = getVehicleType(parseInt(line.name));
-          orderedIDs[i - 1].image ='https://foam-data.lon1.cdn.digitaloceanspaces.com/stb/unknown.png';
+          orderedIDs[i - 1].image ='https://cdn.cristoi.ro/unknown.png';
         } else {
           const typeAndImg = await getTipById(orderedIDs[i - 1].id);
           orderedIDs[i - 1].ac = hasAC(orderedIDs[i - 1].id, typeAndImg[0]);
@@ -413,6 +458,91 @@ app.post('/api/vehicle/remove', (req, res) => {
     return res.status(200).json({ message: "Vehicle removed successfully" });
   } catch (error) {
     console.log('Error removing vehicle:', error);
+    return res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+app.get('/api/routes', async (req, res) => {
+  try {
+  let data = await loadRoutesData();
+  return res.status(200).json(data);
+  } catch (e) {
+    return res.status(500).json({ error: "SERVER_ERROR" });
+  }
+})
+
+app.get('/api/routeShape', async (req, res) => {
+  try {
+    const shapeID = req.query.shapeId;
+    const routeName = req.query.name;
+
+    if (!shapeID) return res.status(400).json({ error: "PROVIDE_ADD_DETAILS" });
+
+    const tour = `${shapeID}0`;
+    const retour = `${shapeID}1`;
+
+    const [tourShape, retourShape] = await Promise.all([
+      getShapeById(tour),
+      getShapeById(retour),
+    ]);
+
+    const allVeh = await fetch(process.env.CORS_MOBI_DATASET).then(r => r.json());
+
+    if (!Array.isArray(allVeh)) {
+      return res.status(500).json({ error: "INVALID_VEHICLE_DATA" });
+    }
+
+    const groupedVehicles = { tour: [], retour: [] };
+
+    for (const v of allVeh) {
+      if (!v.vehicle || !v.vehicle.trip) continue;
+
+      if (String(v.vehicle.trip.route_id) === String(shapeID)) {
+        const vehLat = v.vehicle.position.latitude;
+        const vehLon = v.vehicle.position.longitude;
+        const vehCoords = [vehLat, vehLon];
+
+        const routeShape = v.vehicle.trip.direction_id === 0 ? tourShape : retourShape;
+        let minDist = Infinity;
+
+        for (let i = 0; i < routeShape.length - 1; i++) {
+          const segmentStart = routeShape[i];
+          const segmentEnd = routeShape[i + 1];
+          const projectedPoint = projectPointOntoSegment(vehCoords, segmentStart, segmentEnd);
+          const dist = haversineDistance(vehCoords, projectedPoint);
+
+          if (dist < minDist) {
+            minDist = dist;
+          }
+        }
+
+        if (minDist > 500) {
+          continue;
+        }
+
+        if (v.vehicle.vehicle.th_id == 0 || v.vehicle.vehicle.th_id == null) {
+          groupedVehicles[v.vehicle.trip.direction_id === 0 ? "tour" : "retour"].push({
+            ...v,
+            type: getVehicleType(parseInt(routeName)),
+            img: 'https://cdn.cristoi.ro/unknown.png'
+          });
+        } else {
+          let vhInfo = await getTipById(v.vehicle.vehicle.th_id);
+          groupedVehicles[v.vehicle.trip.direction_id === 0 ? "tour" : "retour"].push({
+            ...v,
+            type: vhInfo[0],
+            img: vhInfo[1]
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      tour: { shape: tourShape, vehicles: groupedVehicles.tour },
+      retour: { shape: retourShape, vehicles: groupedVehicles.retour },
+    });
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: "SERVER_ERROR" });
   }
 });

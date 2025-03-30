@@ -2,18 +2,14 @@
 
 NexTB is an IOS and Android compatible React Native application designed to provide real-time updates on arrival times of trams, buses and trolleybuses in Bucharest. It is not just a tracking app, it provides comprehensive information including Vehicle ID, License Plate, Passenger Count, AC functionality status & an icon of the vehicle (based on vehicle type). This App aims to help residents catch their rides in comfort without suffering from poor air conditioning or overcrowded vehicles.
 
-## <img src="https://i.imgur.com/LSCZp4e.png" width="300"/>
+## Changelog - V.1.1.1 (Beta)
 
 This update brings a better-looking and more functional version of NexTB, with official support for Android devices. The focus is on enhanced UX and UI, alongside performance improvements.
 
 ### New Features & Improvements
-- **Added `Alerts` tab** – View alerts directly in the app, similar to InfoTB.
-- **Revamped Bottom Sheet**:
-    - Switched to a bottom sheet library for smoother interactions (no more custom gestures).
-    - Now displays collapsible cards for each transit line instead of listing all at once. Tap a card for details like vehicle images, license plates, etc.
-    - Opens instantly with a loading screen instead of waiting for backend data to load.
-- **Performance Boost** – Faster loading times with clustering now implemented on iOS (also supported on Android).
-- **New Settings Tab** – Customize your experience by choosing what information to display, including passenger count, AC status, vehicle plate, and ID.
+- Center location button 📍
+- "Lines" Tab - where you can view the vehicles on a route graphically displayed on a map and an animated line representing the route shape + alerts on that line. (animation only works on ios, currently)
+- View more in the [Changelog File](CHANGELOG.md)
 
 ### 🛑 Known Issues
 - **Missing Vehicle IDs/Images** – Caused by TPBI sometimes returning a 0 as the vehicle ID. This results in placeholder images with no fix unless TPBI updates their API. (not likely)
@@ -23,6 +19,8 @@ This update brings a better-looking and more functional version of NexTB, with o
 ### Want to use the app on your IOS device?
 Then I'll add you to the testing team and you'll become an official NexTB tester! Please reach out to me via the contact form on [my website](https://cristoi.ro#contact).
 
+### Want to use the app on your Android device?
+I can send you a custom APK build using your MapBox token. HMU with your token on the contact form on [my website](https://cristoi.ro#contact) and I'll send you the app.
 
 ## How it Works
 

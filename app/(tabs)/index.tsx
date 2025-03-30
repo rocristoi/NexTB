@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Image, View, StatusBar, Text, Platform, Pressable, LayoutAnimation, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView, StyleSheet, Image, View, StatusBar, Text, Platform, Pressable, LayoutAnimation, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { Marker, Region } from 'react-native-maps';
 import MapView  from "react-native-map-clustering";
 interface CustomMapView extends MapView {
@@ -16,6 +16,8 @@ import Collapsible from 'react-native-collapsible';
 import { useStore } from '../store/useStore';
 import * as Haptics from 'expo-haptics';
 import LottieView from "lottie-react-native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 let Mapbox: any;
 
@@ -38,6 +40,10 @@ export default function HomeScreen() {
   const {displayAdditionalInfo, selectedPrimaryDetail} = useStore();
   const mapRef = useRef<CustomMapView | null>(null);
 
+  const screenHeight = Dimensions.get("window").height;
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets(); 
+  const bottomSpacing = tabBarHeight + (Platform.OS === "android" ? insets.bottom : 0);
   const animateToCenter = () => {
     let REGION = {
       latitude: location?.coords.latitude,
@@ -177,7 +183,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
         </View>
-        <View style={{width: "100%", height: "94%"}}>
+        <View style={{width: "100%", height: screenHeight - bottomSpacing }}>
         <MapView
           style={styles.map}
           ref={mapRef}
@@ -437,7 +443,7 @@ export default function HomeScreen() {
     const animateToCenterAndroid = async () => {
       const userLocation = await Mapbox.locationManager.getLastKnownLocation();
       if (userLocation) {
-        cameraRef.current?.flyTo([userLocation.coords.longitude, userLocation.coords.latitude], 1000);
+        (cameraRef.current as any)?.flyTo([userLocation.coords.longitude, userLocation.coords.latitude], 1000);
       }
     } 
   
@@ -463,19 +469,21 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
       </View>
-      <View style={{width: "100%", height: "94%"}}>
+      <View style={{width: "100%", height: screenHeight - bottomSpacing - 20 }}>
 
       <Mapbox.MapView style={{ flex: 1 }} styleURL={Mapbox.StyleURL.Dark}>
         
-              <Mapbox.UserLocation />
       
       <Mapbox.Camera
         zoomLevel={16}
         centerCoordinate={region ? [region.longitude, region.latitude] : [ 26.102377, 44.426858]}
         ref={cameraRef}
+        defaultSettings={{
+          centerCoordinate: [26.1025, 44.4268], 
+          zoomLevel: 12,
+        }}
         />
-
-
+        
       <Mapbox.Images
         images={{
           "default-marker": require("@/assets/not-selected.png"),

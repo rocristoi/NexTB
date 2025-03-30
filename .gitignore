@@ -6,6 +6,16 @@ expo-env.d.ts
 /Backend/.expo
 /Backend/node_modules
 /Backend/.env
+/Backend/shapes.txt
+/Backend/stops.txt
+/Backend/stb-api.py
+/Backend/src/
+/Backend/lib
+/Backend/bin
+/Backend/stb
+/Backend/include
+/Backend/routes.txt
+/Backend/pyvenv.cfg
 /ios
 /scripts
 /certs

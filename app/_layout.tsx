@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as NavigationBar from "expo-navigation-bar";
+NavigationBar.setBackgroundColorAsync("#000000");
 
 SplashScreen.preventAutoHideAsync(); 
 
@@ -38,7 +40,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Lines" }} />
+          <Stack.Screen 
+            name="routeMap" 
+            options={{ 
+              title: 'Route Map',
+            }} 
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
