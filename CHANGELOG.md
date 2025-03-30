@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.1] - 2025-03-22 (in development)
+## [1.1.1] - 2025-03-30
 
 ### Added
 - Center location button
