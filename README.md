@@ -2,9 +2,9 @@
 
 NexTB is an IOS and Android compatible React Native application designed to provide real-time updates on arrival times of trams, buses and trolleybuses in Bucharest. It is not just a tracking app, it provides comprehensive information including Vehicle ID, License Plate, Passenger Count, AC functionality status & an icon of the vehicle (based on vehicle type). This App aims to help residents catch their rides in comfort without suffering from poor air conditioning or overcrowded vehicles.
 
-## Changelog - V.1.1.1 (Beta)
+## Changelog - V.2.0.0 (Beta)
 
-This update brings a better-looking and more functional version of NexTB, with official support for Android devices. The focus is on enhanced UX and UI, alongside performance improvements.
+This update brings a better-looking and more functional version of NexTB. The focus is on speed, information reliability, enhanced UI and UX, alongside performance improvements.
 
 ### New Features & Improvements
 - Center location button 📍
