@@ -31,9 +31,7 @@ The React Native application fetches the list of markers from the GTFS data from
 <img src="https://i.imgur.com/IadNSuW.png" width="800"/>
 
 
-**NOTE:** This app uses an unofficial STB API to determine arrival times & notifications. This API isn't shared publicly due to legal concerns. For learning more about this API, please get in touch with me via the contact form on my website, [cristoi.ro](https://cristoi.ro) or via email at cristi@cristoi.ro.
-
-
+**NOTE:** This app now uses only official APIs for arrival times & notifications. No unofficial STB APIs are required, and the app is ready to use out of the box.
 
 ### <img src="https://i.imgur.com/bIVtBpl.png" width="400"/>
 
@@ -66,7 +64,7 @@ The API follows a multi-step process to retrieve and process real-time transit d
 
 #### Retrieve and Sort Arrival Times:
 
-- The API fetches up to three arrival times for each line from the unofficial STB API.
+- The API fetches the first arriving time for each line from the official endpoints.
 - Finally, it sorts all data by arrival times and returns the response.
 
 This workflow ensures accurate real-time transit information by integrating multiple data sources and API calls efficiently.
@@ -85,8 +83,6 @@ The backend is situated in the /Backend folder.
     APP_PORT=3000
     GTFS_SHAPES_FILE='shapes.txt' 
     GTFS_STOPS_FILE='stops.txt'
-    STB_UNOFF_API_IP='127.0.0.1'  
-    STB_UNOFF_API_PORT='5001'
     CORS_MOBI_BUS_DATA='https://maps.mo-bi.ro/api/busData' 
     CORS_MOBI_NEXT_ARRIVALS='https://maps.mo-bi.ro/api/nextArrivals/' 
     CORS_MOBI_DATASET='https://maps.mo-bi.ro/api/dataset'
@@ -103,9 +99,6 @@ The backend is situated in the /Backend folder.
 
     #### `GTFS_SHAPES_FILE='shapes.txt'` and `GTFS_STOPS_FILE='stops.txt'`
     These are the GTFS files, a common format for public transportation schedules and associated geographic information, from [here](https://gtfs.tpbi.ro/regional).
-
-    #### `STB_UNOFF_API_IP='127.0.0.1'` and `STB_UNOFF_API_PORT='5001'`
-    This is the local IP and port where the unofficial STB API can be accessed.
 
     #### `CORS_MOBI_BUS_DATA='https://maps.mo-bi.ro/api/busData'`, `CORS_MOBI_NEXT_ARRIVALS='https://maps.mo-bi.ro/api/nextArrivals/'`, and `CORS_MOBI_DATASET='https://maps.mo-bi.ro/api/dataset'`
     These URLs are the APIs to fetch bus data, next arrival times and dataset respectively from maps.mo-bi.ro. Please remember to use an anti-cors service with these URLs to prevent any blocking due to CORS policy.
