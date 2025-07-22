@@ -3,8 +3,27 @@ import { useEffect, useState } from "react";
 import {  View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import RenderHTML from 'react-native-render-html';
 
+// Define types for alert data
+
+type AlertLine = {
+  name: string;
+  color: string;
+};
+
+type Alert = {
+  id: string;
+  title: string;
+  message?: string;
+  created_at: string;
+  lines?: AlertLine[];
+};
+
+type AlertsResponse = {
+  notifications: Alert[];
+};
+
 export default function AlertsScreen() {
-const [alerts, setAlerts] = useState<any>(null)
+const [alerts, setAlerts] = useState<AlertsResponse | null>(null)
 const { width } = useWindowDimensions();
 
 useEffect(() => {
@@ -45,7 +64,7 @@ if(alerts != null) return (
   }}
   showsVerticalScrollIndicator={false} 
 >
-  {(alerts.notifications).map((alert: any) => (
+  {(alerts.notifications).map((alert) => (
     <View 
       key={alert.id} 
       style={{
@@ -64,9 +83,9 @@ if(alerts != null) return (
         {alert.title}
       </Text>
 
-      {alert.lines?.length > 0 && (
+      {Array.isArray(alert.lines) && alert.lines.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
-          {alert.lines.map((line: any) => (
+          {alert.lines.map((line) => (
             <View 
               key={line.name} 
               style={{

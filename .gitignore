@@ -21,3 +21,4 @@ expo-env.d.ts
 /certs
 /android
 eas.json
+.DS_Store

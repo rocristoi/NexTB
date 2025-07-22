@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2025-07-22
+
+### Fixed
+- Fixed backend API routes, no longer using unofficial APIs. Now gets only one arriving time (for the first vehicle arriving in the station).
+- Fixed major bugs.
+
+### Changed
+- Remade the design of many sections in the app.
+- Improved overall UI and UX.
+
 ## [1.1.1] - 2025-03-30
 
 ### Added
