@@ -712,7 +712,7 @@ async function downloadAndExtractStops() {
 await downloadAndExtractStops();
 cron.schedule('0 3 * * *', downloadAndExtractStops);
 
-app.get('/api/getstops', (res) => {
+app.get('/api/getstops', (req, res) => {
   try {
     const stops = JSON.parse(fs.readFileSync(STOPS_JSON_PATH, 'utf8'));
     res.status(200).json(stops);
