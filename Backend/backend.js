@@ -1,13 +1,33 @@
-const express = require('express');
+import express from 'express';
+import fs from 'fs';
+import { parse } from 'csv-parse/sync';
+import haversine from 'haversine-distance';
+import * as turf from '@turf/turf';
+import readline from 'readline';
+import dotenv from 'dotenv';
+import csv from 'csv-parser';
+import * as stbApi from './stbApi.js';
+import NodeCache from 'node-cache';
+import rateLimit from 'express-rate-limit';
+import unzipper from 'unzipper';
+import cron from 'node-cron';
+import crypto from 'crypto';
+import https from 'https';
+import path from 'path';
+
+dotenv.config();
+
 const app = express();
-const fs = require('fs');
-const { parse } = require('csv-parse/sync');
-const haversine = require('haversine-distance');
-const turf = require('@turf/turf');
-const readline = require('readline');
-const net = require('net');
-require('dotenv').config();
-const csv = require("csv-parser");
+
+const cache = new NodeCache();
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60, 
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
 
 
 async function getShapeById(shapeId) {
@@ -47,7 +67,7 @@ let routesDataCache = null;
 const nonACtypes = ['V3A-93', 'V3A-93M', 'V3A-93 PPC', 'V3A-93 CH-PPC', 'V3A-2010-PPC-CA', 'V3A-93M 2000', 'V3A-2S-93', 'Bucur 1 V2A-T', 'Tatra T4R'];
 
 const hasAC = (vehID, type) => {
-  if(new Set(readData()).has(vehID)) {
+  if(new Set(readData()).has(String(vehID))) {
     return false;
   } else if(nonACtypes.includes(type)){
     return false;
@@ -57,23 +77,24 @@ const hasAC = (vehID, type) => {
 };
 
 const loadRoutesData = async () => {
-  if (routesDataCache) return routesDataCache;
-
+  const cacheKey = 'gtfs_routes';
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
   return new Promise((resolve, reject) => {
-    const results = Object.create(null); 
-
+    const results = Object.create(null);
     fs.createReadStream("routes.txt")
       .pipe(csv({ separator: "," }))
       .on("data", (data) => {
-        const key = data.route_short_name; 
+        const key = data.route_short_name;
         const value = {
           id: data.route_id,
           color: data.route_color,
           type: getVehicleType(data.route_short_name)
-        }; 
+        };
         results[key] = value;
       })
       .on("end", () => {
+        cache.set(cacheKey, results, 300); 
         routesDataCache = results;
         resolve(routesDataCache);
       })
@@ -151,29 +172,6 @@ function getImageByTip(tip) {
     return imageMap[tip] || "https://cdn.cristoi.ro/BLFV2.png";
 }
 
-
-function isServerReachable(host, port, timeout = 3000) {
-  return new Promise((resolve) => {
-      const socket = new net.Socket();
-
-      socket.setTimeout(timeout);
-      socket.on('connect', () => {
-          resolve(true);
-          socket.destroy();
-      });
-
-      socket.on('error', () => {
-          resolve(false);
-      });
-
-      socket.on('timeout', () => {
-          resolve(false);
-          socket.destroy();
-      });
-
-      socket.connect(port, host);
-  });
-}
 
 let stopsDataCache = null;
 
@@ -294,12 +292,6 @@ async function calculateTramToStationDistance(tramPos, stationPos, shapeId) {
   }
 }
 
-const getThreeTimes = async (stopID, lineID) => {
-    const r = await fetch(`http://${process.env.STB_UNOFF_API_IP}:${process.env.STB_UNOFF_API_PORT}/api/time/all/${stopID}/${lineID}`)
-    const times = await r.json();
-    return times;
-}
-
 const isTimestampRecent = (timestamp) => {
     const now = new Date(); 
     const givenTime = new Date(timestamp * 1000); 
@@ -321,18 +313,23 @@ app.use((req, res, next) => {
 
 app.get('/api', async (req, res) => {
   const stationID = req.query.stationID;
-
-  const reachableServerCheck = await isServerReachable(process.env.STB_UNOFF_API_IP, process.env.STB_UNOFF_API_PORT);
-  if (!reachableServerCheck) {
-    console.log('⚠️ STB API SERVER IS DOWN!');
-    return res.status(500).json({ error: "Failed to fetch transport data" });
+  let allTrams, stationInfo, allDatasets, nextArrivals;
+  try {
+    [allTrams, stationInfo, allDatasets, nextArrivals] = await Promise.all([
+      fetch(process.env.CORS_MOBI_BUS_DATA).then(r => r.json()),
+      fetch(`${process.env.CORS_MOBI_NEXT_ARRIVALS}${stationID}`).then(r => r.json()),
+      fetch(process.env.CORS_MOBI_DATASET).then(r => r.json()),
+      fetch(`${process.env.CORS_MOBI_NEXT_ARRIVALS}${stationID}`).then(r => r.json())
+    ]);
+  } catch (err) {
+    return res.status(503).json({ error: 'Service Unavailable' });
   }
-
-  const [allTrams, stationInfo, allDatasets] = await Promise.all([
-    fetch(process.env.CORS_MOBI_BUS_DATA).then(r => r.json()),
-    fetch(`${process.env.CORS_MOBI_NEXT_ARRIVALS}${stationID}`).then(r => r.json()),
-    fetch(process.env.CORS_MOBI_DATASET).then(r => r.json())
-  ]);
+  const datasetByPlate = new Map();
+  for (const entry of allDatasets) {
+    if (entry.vehicle && entry.vehicle.vehicle && entry.vehicle.vehicle.license_plate) {
+      datasetByPlate.set(entry.vehicle.vehicle.license_plate, entry);
+    }
+  }
 
   const finalObject = {
     name: stationInfo.name,
@@ -343,23 +340,26 @@ app.get('/api', async (req, res) => {
   for (const line of stationInfo.lines.sort((a, b) => a.name.localeCompare(b.name))) {
     const COOLDOWN = 5000;
     let filteredTrams = [];
+    let nextArrivalTime = null;
+    if (Array.isArray(nextArrivals.lines)) {
+      const arrivalLine = nextArrivals.lines.find(l => String(l.id) === String(line.id));
+      if (arrivalLine && arrivalLine.arrivingTime !== undefined) {
+        nextArrivalTime = arrivalLine.arrivingTime;
+      }
+    }
 
-      const fetchWithRetry = async (stationID, lineID, max = 5, delayMs = 3000) => {
-        for (let i = 0; i < max; i++) try { return await getThreeTimes(stationID, lineID); } 
-        catch { if (i < max - 1) await new Promise(res => setTimeout(res, delayMs)); }
-        throw new Error("Max retries reached - STB Server may not be reachable!");
-    };
-    times = await fetchWithRetry(stationID, line.id);
-  
     do {
       filteredTrams = allTrams.filter(veh =>
+        veh &&
+        veh.vehicle &&
+        veh.vehicle.trip &&
+        veh.vehicle.vehicle &&
         veh.vehicle.trip.routeId == line.id &&
         veh.vehicle.trip.directionId != null &&
         Number(veh.vehicle.trip.directionId) === Number(line.direction)
       );
 
       if (filteredTrams.every(tram => isTimestampRecent(tram.vehicle.timestamp))) break;
-      console.log(`Cooldown for ${COOLDOWN / 1000} seconds...`);
       await new Promise(resolve => setTimeout(resolve, COOLDOWN));
     } while (true);
 
@@ -381,10 +381,13 @@ app.get('/api', async (req, res) => {
     let orderedIDs = distAndId.sort((a, b) => a.distance - b.distance);
 
     for (let i = 0; i < orderedIDs.length; i++) {
-      let datasetVeh = allDatasets.find(dataset => dataset.vehicle.vehicle.license_plate == orderedIDs[i].plate);
-      if (datasetVeh) {
-        orderedIDs[i].on_board = datasetVeh.vehicle.passenger_info.on_board;
+      let datasetVeh = datasetByPlate.get(orderedIDs[i].plate);
+      if (datasetVeh && datasetVeh.vehicle && datasetVeh.vehicle.vehicle) {
+        orderedIDs[i].on_board = datasetVeh.vehicle.passenger_info?.on_board ?? null;
         orderedIDs[i].id = datasetVeh.vehicle.vehicle.th_id;
+      } else {
+        orderedIDs[i].on_board = null;
+        orderedIDs[i].id = null;
       }
     }
 
@@ -400,14 +403,17 @@ app.get('/api', async (req, res) => {
           orderedIDs[i - 1].type = typeAndImg[0];
           orderedIDs[i - 1].image = typeAndImg[1];
         }
-        
       } catch (err) {
-        console.error(err.message);
         orderedIDs[i - 1].type = "Unknown";
       }
 
-      if (i <= 3) {
-        orderedIDs[i - 1].time = times[i - 1] == 'm' ? process.env.MORE_THAN_SVTN_MINUTES_TEXT : times[i - 1];
+      if (i === 1) {
+        if (nextArrivalTime !== null && !isNaN(nextArrivalTime)) {
+          const minutes = Math.ceil(Number(nextArrivalTime) / 60);
+          orderedIDs[i - 1].time = minutes;
+        } else {
+          orderedIDs[i - 1].time = process.env.MORE_THAN_SVTN_MINUTES_TEXT;
+        }
       }
     }
 
@@ -434,7 +440,6 @@ app.post('/api/vehicle/add', (req, res) => {
     writeData(vehicles);
     return res.status(200).json({ message: "Vehicle added successfully" });
   } catch (error) {
-    console.log('Error adding vehicle:', error);
     return res.status(500).json({ error: "SERVER_ERROR" });
   }
 });
@@ -457,7 +462,6 @@ app.post('/api/vehicle/remove', (req, res) => {
     writeData(updatedVehicles);
     return res.status(200).json({ message: "Vehicle removed successfully" });
   } catch (error) {
-    console.log('Error removing vehicle:', error);
     return res.status(500).json({ error: "SERVER_ERROR" });
   }
 });
@@ -486,55 +490,88 @@ app.get('/api/routeShape', async (req, res) => {
       getShapeById(retour),
     ]);
 
+    const busData = await fetch(process.env.CORS_MOBI_BUS_DATA).then(r => r.json());
     const allVeh = await fetch(process.env.CORS_MOBI_DATASET).then(r => r.json());
 
-    if (!Array.isArray(allVeh)) {
-      return res.status(500).json({ error: "INVALID_VEHICLE_DATA" });
+    const datasetByPlate = new Map();
+    for (const v of allVeh) {
+      if (v.vehicle && v.vehicle.vehicle && v.vehicle.vehicle.license_plate) {
+        datasetByPlate.set(v.vehicle.vehicle.license_plate, v);
+      }
     }
 
     const groupedVehicles = { tour: [], retour: [] };
 
-    for (const v of allVeh) {
-      if (!v.vehicle || !v.vehicle.trip) continue;
+    for (const v of busData) {
+      if (!v.vehicle || !v.vehicle.trip || !v.vehicle.vehicle) continue;
+      if (String(v.vehicle.trip.routeId) !== String(shapeID)) continue;
 
-      if (String(v.vehicle.trip.route_id) === String(shapeID)) {
-        const vehLat = v.vehicle.position.latitude;
-        const vehLon = v.vehicle.position.longitude;
-        const vehCoords = [vehLat, vehLon];
+      const plate = v.vehicle.vehicle.licensePlate;
+      const datasetEntry = plate ? datasetByPlate.get(plate) : null;
 
-        const routeShape = v.vehicle.trip.direction_id === 0 ? tourShape : retourShape;
-        let minDist = Infinity;
+      const vehLat = v.vehicle.position.latitude;
+      const vehLon = v.vehicle.position.longitude;
+      const vehCoords = [vehLat, vehLon];
 
-        for (let i = 0; i < routeShape.length - 1; i++) {
-          const segmentStart = routeShape[i];
-          const segmentEnd = routeShape[i + 1];
-          const projectedPoint = projectPointOntoSegment(vehCoords, segmentStart, segmentEnd);
-          const dist = haversineDistance(vehCoords, projectedPoint);
+      const routeShape = v.vehicle.trip.directionId === 0 ? tourShape : retourShape;
+      let minDist = Infinity;
 
-          if (dist < minDist) {
-            minDist = dist;
-          }
-        }
+      for (let i = 0; i < routeShape.length - 1; i++) {
+        const segmentStart = routeShape[i];
+        const segmentEnd = routeShape[i + 1];
+        const projectedPoint = projectPointOntoSegment(vehCoords, segmentStart, segmentEnd);
+        const dist = haversineDistance(vehCoords, projectedPoint);
 
-        if (minDist > 500) {
-          continue;
-        }
-
-        if (v.vehicle.vehicle.th_id == 0 || v.vehicle.vehicle.th_id == null) {
-          groupedVehicles[v.vehicle.trip.direction_id === 0 ? "tour" : "retour"].push({
-            ...v,
-            type: getVehicleType(parseInt(routeName)),
-            img: 'https://cdn.cristoi.ro/unknown.png'
-          });
-        } else {
-          let vhInfo = await getTipById(v.vehicle.vehicle.th_id);
-          groupedVehicles[v.vehicle.trip.direction_id === 0 ? "tour" : "retour"].push({
-            ...v,
-            type: vhInfo[0],
-            img: vhInfo[1]
-          });
+        if (dist < minDist) {
+          minDist = dist;
         }
       }
+
+      if (minDist > 10) continue;
+
+      let id = null;
+      let type = 'Unknown', img = 'https://cdn.cristoi.ro/unknown.png', on_board = null, licensePlate = null;
+
+      if (datasetEntry && datasetEntry.vehicle && datasetEntry.vehicle.vehicle) {
+        id = datasetEntry.vehicle.vehicle.th_id ?? v.vehicle.vehicle.th_id ?? null;
+        on_board = datasetEntry.vehicle.passenger_info?.on_board ?? null;
+      } else if (v.vehicle.vehicle.th_id) {
+        id = v.vehicle.vehicle.th_id;
+      }
+
+      licensePlate = v.vehicle.vehicle.licensePlate ?? null;
+
+      if (id) {
+        const vhInfo = await getTipById(id);
+        type = vhInfo[0];
+        img = vhInfo[1];
+        if (type === 'Unknown') {
+          if (routeName) {
+            type = getVehicleType(routeName);
+          } else if (v.vehicle.trip && v.vehicle.trip.routeId) {
+            type = getVehicleType(v.vehicle.trip.routeId);
+          }
+        }
+      } else {
+        if (routeName) {
+          type = getVehicleType(routeName);
+        } else if (v.vehicle.trip && v.vehicle.trip.routeId) {
+          type = getVehicleType(v.vehicle.trip.routeId);
+        }
+      }
+
+      groupedVehicles[v.vehicle.trip.directionId === 0 ? 'tour' : 'retour'].push({
+        ...v,
+        id,
+        type,
+        img,
+        on_board,
+        licensePlate,
+        position: {
+          latitude: vehLat,
+          longitude: vehLon
+        }
+      });
     }
 
     return res.status(200).json({
@@ -542,11 +579,147 @@ app.get('/api/routeShape', async (req, res) => {
       retour: { shape: retourShape, vehicles: groupedVehicles.retour },
     });
   } catch (error) {
-    console.error(error);
     return res.status(500).json({ error: "SERVER_ERROR" });
   }
 });
 
+app.get('/api/alerts', async (req, res) => {
+  const cacheKey = 'alerts';
+  const cached = cache.get(cacheKey);
+  if (cached) return res.status(200).json(cached);
+  while (true) {
+    try {
+      const alerts = await stbApi.getAlerts();
+      cache.set(cacheKey, alerts, 60); 
+      return res.status(200).json(alerts);
+    } catch (e) {
+      // Log and retry indefinitely
+      await new Promise(res => setTimeout(res, 1000));
+    }
+  }
+});
+
+const STOPS_ZIP_URL = 'https://gtfs.tpbi.ro/regional/BUCHAREST-REGION.zip';
+const STOPS_JSON_PATH = 'assets/data/stops.json';
+
+async function fileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', () => resolve(null)); 
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function downloadFile(url, destPath) {
+  const dir = path.dirname(destPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (typeof fetch === 'function') {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+    const ab = await res.arrayBuffer();
+    fs.writeFileSync(destPath, Buffer.from(ab));
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(destPath);
+    https.get(url, (response) => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
+        return;
+      }
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close(resolve);
+      });
+      file.on('error', (err) => {
+        fs.unlink(destPath, () => reject(err));
+      });
+    }).on('error', (err) => {
+      fs.unlink(destPath, () => reject(err));
+    });
+  });
+}
+
+async function downloadAndExtractStops() {
+  try {
+    const tmpDownloadPath = './BUCHAREST-REGION.zip.tmp';
+    const finalZipPath = './BUCHAREST-REGION.zip';
+    const stopsTxtPath = './stops.txt';
+    const stopsJsonPath = './assets/data/stops.json';
+
+    await downloadFile(STOPS_ZIP_URL, tmpDownloadPath);
+
+    const newHash = await fileHash(tmpDownloadPath);
+    const oldHash = await fileHash(finalZipPath);
+    if (newHash && oldHash && newHash === oldHash) {
+      fs.unlinkSync(tmpDownloadPath);
+      console.log('[STOPS] ZIP unchanged, skipping extraction and conversion.');
+      return;
+    }
+    fs.renameSync(tmpDownloadPath, finalZipPath);
+
+    const filesToExtract = ['stops.txt', 'routes.txt', 'shapes.txt'];
+    const extracted = { stops: false, routes: false, shapes: false };
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(finalZipPath)
+        .pipe(unzipper.Parse())
+        .on('entry', function (entry) {
+          const name = entry.path;
+          if (filesToExtract.includes(name)) {
+            const outPath = `./${name}`;
+            const out = fs.createWriteStream(outPath);
+            entry.pipe(out);
+            out.on('finish', () => {
+              if (name === 'stops.txt') extracted.stops = true;
+              if (name === 'routes.txt') extracted.routes = true;
+              if (name === 'shapes.txt') extracted.shapes = true;
+              if (Object.values(extracted).every(Boolean)) resolve();
+            });
+            out.on('error', reject);
+          } else {
+            entry.autodrain();
+          }
+        })
+        .on('close', () => {
+          if (extracted.stops) resolve();
+          else reject(new Error('stops.txt not found in ZIP'));
+        })
+        .on('error', reject);
+    });
+
+    const stopsTxtRaw = fs.readFileSync(stopsTxtPath, 'utf8');
+    const stops = parse(stopsTxtRaw, { columns: true, skip_empty_lines: true });
+    for (const stop of stops) {
+      if (stop.stop_id && /^\d+$/.test(stop.stop_id)) stop.stop_id = parseInt(stop.stop_id, 10);
+      if (stop.stop_lat) stop.stop_lat = stop.stop_lat === '' ? null : parseFloat(stop.stop_lat);
+      if (stop.stop_lon) stop.stop_lon = stop.stop_lon === '' ? null : parseFloat(stop.stop_lon);
+    }
+    const stopsDir = path.dirname(stopsJsonPath);
+    if (!fs.existsSync(stopsDir)) {
+      fs.mkdirSync(stopsDir, { recursive: true });
+    }
+    fs.writeFileSync(stopsJsonPath, JSON.stringify(stops, null, 2), 'utf8');
+    console.log('[STOPS] Downloaded and converted stops.txt to JSON.');
+  } catch (err) {
+    console.error('[STOPS] Error downloading or processing stops:', err);
+  }
+}
+
+await downloadAndExtractStops();
+cron.schedule('0 3 * * *', downloadAndExtractStops);
+
+app.get('/api/getstops', (res) => {
+  try {
+    const stops = JSON.parse(fs.readFileSync(STOPS_JSON_PATH, 'utf8'));
+    res.status(200).json(stops);
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load stops data.' });
+  }
+});
 
 app.listen(process.env.APP_PORT, () => {
     console.log(`NEXTB API is running at http://localhost:${process.env.APP_PORT}`);
